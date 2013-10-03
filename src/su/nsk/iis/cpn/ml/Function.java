@@ -55,4 +55,9 @@ public class Function {
     public int getArity() {
         return argumentTypes.size();
     }
+
+    public Type getType() {
+        // TODO
+        return null;
+    }
 }

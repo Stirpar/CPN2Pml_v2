@@ -22,7 +22,7 @@ public final class Transition {
     
     /**
      * Constructs the transition with the given name and guard.
-     * @param guard the guard, may be null (then it means that the transition is always enabled)
+     * @param guard the guard, may be null (THEN it means that the transition is always enabled)
      * @param name the name, should be unique
      */
     public Transition(Expression guard, String name) {

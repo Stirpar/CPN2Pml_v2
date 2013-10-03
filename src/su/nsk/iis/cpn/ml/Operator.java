@@ -5,37 +5,42 @@ package su.nsk.iis.cpn.ml;
  * @author stirpar
  */
 public enum Operator {
+
     //int
     NEG,
     MUL, DIV, MOD,
     PLUS, MINUS,
     LESS, GREATER, EQ, NEQ, LESSEQ, GREATEREQ,
-    ABS, MIN, MAX,
+
     //bool
     NOT,
     AND,
     OR,
-    TRUE, FALSE,
+
     //misc
-        TUPLE, LIST,
-    //ctl
-    //CASE, PAT, // (case expr (pat p1 e1) ... (pat pn en) )
-    IF, // (if cond e1 e0)
-    LET, LOCAL, VAL, // (let (local (val) ... (val)) expr)
-    //typle
+    TUPLE, LIST,
+    //ctrl
+    IF, THEN, ELSE,
+
+    //tuple
     ELEM,
+
     //list
-    CONS, CONCAT, HD, TL, LENGTH, NTH, NTHTAIL, REV, NULL, NTHREPLACE, RMALL,
+    NIL, CONS, CONCAT,
+
     //unit
     UNIT,
-    MAP, FOLD,
+
     //ms
-    MS, MSSUM, MSSUB, MSMUL,
+    MS,
+    MSSUM, //, MSSUB, MSMUL,
     EMPTY,
-    //util
-    open, close, open_sq, close_sq, open_c, close_c, comma,
-    then, els, of, in, end, alt, semicolon, nil,
+
+    // time
     TIME, ADDTIME,
+
+    //util
+    OPEN, CLOSE, OPEN_SQ, CLOSE_SQ, OPEN_C, CLOSE_C, COMMA,
     ;
     
     /**

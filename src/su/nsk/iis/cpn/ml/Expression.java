@@ -39,17 +39,14 @@ public class Expression {
     private static final Map<String, Operator> operators = new TreeMap<String, Operator>();
     
     static {
-        operators.put(",", Operator.comma);
-        operators.put("(", Operator.open);
-        operators.put(")", Operator.close);
-        operators.put("[", Operator.open_sq);
-        operators.put("]", Operator.close_sq);
-        operators.put("{", Operator.open_c);
-        operators.put("}", Operator.close_c);
-        
-        operators.put("abs", Operator.ABS);
-        operators.put("min", Operator.MIN);
-        operators.put("max", Operator.MAX);
+        operators.put(",", Operator.COMMA);
+        operators.put("(", Operator.OPEN);
+        operators.put(")", Operator.CLOSE);
+        operators.put("[", Operator.OPEN_SQ);
+        operators.put("]", Operator.CLOSE_SQ);
+        operators.put("{", Operator.OPEN_C);
+        operators.put("}", Operator.CLOSE_C);
+
         operators.put("~", Operator.NEG);
         operators.put("*", Operator.MUL);
         operators.put("div", Operator.DIV);
@@ -71,28 +68,15 @@ public class Expression {
         operators.put("andalso", Operator.AND);
         operators.put("orelse", Operator.OR);
         operators.put("if", Operator.IF);
-        operators.put("then", Operator.then);
-        operators.put("else", Operator.els);
-        operators.put("nil", Operator.nil);
+        operators.put("then", Operator.THEN);
+        operators.put("else", Operator.ELSE);
+        operators.put("nil", Operator.NIL);
         operators.put("empty", Operator.EMPTY);
-        operators.put("true", Operator.TRUE);
-        operators.put("false", Operator.FALSE);
         operators.put("#", Operator.ELEM);
         operators.put("::", Operator.CONS);
         operators.put("^^", Operator.CONCAT);
-        operators.put("rev", Operator.REV);
-        operators.put("length", Operator.LENGTH);
-        operators.put("hd", Operator.HD);
-        operators.put("tl", Operator.TL);
-        operators.put("nth", Operator.NTH);
-        operators.put("nthtail", Operator.NTHTAIL);
-        operators.put("nthreplace", Operator.NTHREPLACE);
-        operators.put("rmall", Operator.RMALL);
-        operators.put("null", Operator.NULL);
         operators.put("`", Operator.MS);
-        operators.put("**", Operator.MSMUL);
         operators.put("++", Operator.MSSUM);
-        operators.put("--", Operator.MSSUB);
         operators.put("@", Operator.TIME);
         operators.put("@+", Operator.ADDTIME);
 
@@ -122,28 +106,22 @@ public class Expression {
         ++i;
         priority.put(Operator.MS, i);
         ++i;
-        priority.put(Operator.MSMUL, i);
-        ++i;
         priority.put(Operator.MSSUM, i);
-        priority.put(Operator.MSSUB, i);
         ++i;
         priority.put(Operator.CONS, i);
         ++i;
         priority.put(Operator.IF, i);
-        priority.put(Operator.then, i);
-        priority.put(Operator.els, i);
+        priority.put(Operator.THEN, i);
+        priority.put(Operator.ELSE, i);
         ++i;
-        priority.put(Operator.open, i);
-        priority.put(Operator.open_sq, i);
-        priority.put(Operator.open_c, i);
+        priority.put(Operator.OPEN, i);
+        priority.put(Operator.OPEN_SQ, i);
+        priority.put(Operator.OPEN_C, i);
         ++i;
-        priority.put(Operator.TIME, i); // ?
-        priority.put(Operator.ADDTIME, i); // ?
+        priority.put(Operator.TIME, i);
+        priority.put(Operator.ADDTIME, i);
 
 
-        arity.put(Operator.ABS, 1);
-        arity.put(Operator.MIN, 2);
-        arity.put(Operator.MAX, 2);
         arity.put(Operator.NEG, 1);
         arity.put(Operator.MUL, 2);
         arity.put(Operator.DIV, 2);
@@ -162,30 +140,14 @@ public class Expression {
         arity.put(Operator.ELEM, 2);
         arity.put(Operator.CONS, 2);
         arity.put(Operator.CONCAT, 2);
-        arity.put(Operator.REV, 1);
-        arity.put(Operator.LENGTH, 1);
-        arity.put(Operator.HD, 1);
-        arity.put(Operator.TL, 1);
-        arity.put(Operator.NTH, 2);
-        arity.put(Operator.NTHTAIL, 2);
-        arity.put(Operator.NTHREPLACE, 3);
-        arity.put(Operator.RMALL, 3);
-        arity.put(Operator.NULL, 1);
         arity.put(Operator.MS, 2);
-        arity.put(Operator.MSMUL, 2);
         arity.put(Operator.MSSUM, 2);
-        arity.put(Operator.MSSUB, 2);
         arity.put(Operator.EMPTY, 0);
         arity.put(Operator.UNIT, 0);
-        arity.put(Operator.TRUE, 0);
-        arity.put(Operator.FALSE, 0);
         arity.put(Operator.TIME, 2);
         arity.put(Operator.ADDTIME, 2);
 
 
-        fixity.put(Operator.ABS, Fixity.PREFIX);
-        fixity.put(Operator.MIN, Fixity.PREFIX);
-        fixity.put(Operator.MAX, Fixity.PREFIX);
         fixity.put(Operator.NEG, Fixity.PREFIX);
         fixity.put(Operator.MUL, Fixity.INFIX_LTR);
         fixity.put(Operator.DIV, Fixity.INFIX_LTR);
@@ -204,25 +166,10 @@ public class Expression {
         fixity.put(Operator.ELEM, Fixity.PREFIX);
         fixity.put(Operator.CONS, Fixity.INFIX_RTL);
         fixity.put(Operator.CONCAT, Fixity.INFIX_LTR);
-        fixity.put(Operator.REV, Fixity.PREFIX);
-        fixity.put(Operator.LENGTH, Fixity.PREFIX);
-        fixity.put(Operator.HD, Fixity.PREFIX);
-        fixity.put(Operator.TL, Fixity.PREFIX);
-        fixity.put(Operator.NTH, Fixity.PREFIX);
-        fixity.put(Operator.NTHTAIL, Fixity.PREFIX);
-        fixity.put(Operator.NTHREPLACE, Fixity.PREFIX);
-        fixity.put(Operator.RMALL, Fixity.PREFIX);
-        fixity.put(Operator.NULL, Fixity.PREFIX);
         fixity.put(Operator.MS, Fixity.INFIX_LTR);
-        fixity.put(Operator.MSMUL, Fixity.INFIX_LTR);
         fixity.put(Operator.MSSUM, Fixity.INFIX_LTR);
-        fixity.put(Operator.MSSUB, Fixity.INFIX_LTR);
-        
         fixity.put(Operator.EMPTY, Fixity.PREFIX);
         fixity.put(Operator.UNIT, Fixity.PREFIX);
-        fixity.put(Operator.TRUE, Fixity.PREFIX);
-        fixity.put(Operator.FALSE, Fixity.PREFIX);
-
         fixity.put(Operator.TIME, Fixity.INFIX_LTR);
         fixity.put(Operator.ADDTIME, Fixity.INFIX_LTR);
     }
@@ -241,7 +188,7 @@ public class Expression {
         private Stack<ExpressionNode> rev = new Stack<ExpressionNode>();
         
         /**
-         * If the given node is an operator then pops from the stack as many nodes from the stack,
+         * If the given node is an operator THEN pops from the stack as many nodes from the stack,
          * as there must be operator's arguments and adds them to the node as children node;
          * pushes the given node to the top of stack.
          * @param node the node
@@ -305,7 +252,7 @@ public class Expression {
                     Operator op = operators.get(lexem.getString());
                     int argsNum;
                     switch (op) {
-                        case nil:
+                        case NIL:
                             stack.smartPush( new ExpressionNode(Operator.LIST, 0) );
                             pushedArg(stack, opStack);
                             break;
@@ -316,9 +263,9 @@ public class Expression {
                         case IF:
                             if (! opStack.empty()) {
                                 switch (opStack.peek().getOperator()) {
-                                    case open:
-                                    case open_sq:
-                                    case open_c:
+                                    case OPEN:
+                                    case OPEN_SQ:
+                                    case OPEN_C:
                                         break;
                                     default:
                                         throw new SyntaxError("IF-THEN-ELSE statement must be in brackets");
@@ -326,8 +273,8 @@ public class Expression {
                             }
                             opStack.push( new ExpressionNode(op, 1) );
                             break;
-                        case then:
-                        case els:
+                        case THEN:
+                        case ELSE:
                             while (! opStack.empty()) {
                                 ExpressionNode top = opStack.peek();
                                 if (top.getOperator() == Operator.IF) break;
@@ -338,28 +285,28 @@ public class Expression {
                             if (opStack.empty()) throw new SyntaxError("Incorrect IF-THEN-ELSE statement");
                             ExpressionNode IF = opStack.pop();
                             argsNum = IF.getValue() + 1;
-                            if (op == Operator.then && argsNum != 2 || op == Operator.els && argsNum != 3) {
+                            if (op == Operator.THEN && argsNum != 2 || op == Operator.ELSE && argsNum != 3) {
                                 throw new SyntaxError("Incorrect IF-THEN-ELSE statement");
                             }
                             opStack.push( new ExpressionNode(Operator.IF, argsNum) );
                             break;
-                        case open:
-                        case open_sq:
-                        case open_c:
+                        case OPEN:
+                        case OPEN_SQ:
+                        case OPEN_C:
                             opStack.push( new ExpressionNode(op, 0) );
                             break;
-                        case comma:
-                        case close:
-                        case close_sq:
-                        case close_c:
+                        case COMMA:
+                        case CLOSE:
+                        case CLOSE_SQ:
+                        case CLOSE_C:
                             // <>
-                            if (prevLexem.getString().equals("[") && op == Operator.close_sq) {
+                            if (prevLexem.getString().equals("[") && op == Operator.CLOSE_SQ) {
                                 opStack.pop();
                                 stack.smartPush(new ExpressionNode(Operator.LIST, 0));
                                 pushedArg(stack, opStack);
                                 break;
                             }
-                            if (prevLexem.getString().equals("(") && op == Operator.close) {
+                            if (prevLexem.getString().equals("(") && op == Operator.CLOSE) {
                                 opStack.pop();
                                 stack.smartPush(new ExpressionNode(Operator.UNIT, 0));
                                 pushedArg(stack, opStack);
@@ -369,11 +316,11 @@ public class Expression {
                             
                             while (! opStack.empty()) {
                                 ExpressionNode top = opStack.pop();
-                                if (top.getOperator() == Operator.open || top.getOperator() == Operator.open_sq || top.getOperator() == Operator.open_c) {
+                                if (top.getOperator() == Operator.OPEN || top.getOperator() == Operator.OPEN_SQ || top.getOperator() == Operator.OPEN_C) {
                                     opStack.push(top);
                                     break;
                                 }
-                                if (opStack.peek().getOperator() != Operator.open_c) {
+                                if (opStack.peek().getOperator() != Operator.OPEN_C) {
                                     stack.smartPush(top);
                                     pushedArg(stack, opStack); /* ? */
                                 }
@@ -388,21 +335,21 @@ public class Expression {
                             ExpressionNode open = opStack.pop();
                             Operator op2 = open.getOperator();
                             argsNum = open.getValue() + 1;
-                            if (op == Operator.comma) {
+                            if (op == Operator.COMMA) {
                                 opStack.push( new ExpressionNode(op2, argsNum) );
                             }
                             else {
-                                if (op2 == Operator.open && op != Operator.close || op2 == Operator.open_sq && op != Operator.close_sq || op2 == Operator.open_c && op != Operator.close_c) {
+                                if (op2 == Operator.OPEN && op != Operator.CLOSE || op2 == Operator.OPEN_SQ && op != Operator.CLOSE_SQ || op2 == Operator.OPEN_C && op != Operator.CLOSE_C) {
                                     throw new SyntaxError("Incorrect brackets");
                                 }
                                 
-                                if (op == Operator.close && argsNum > 1) {
+                                if (op == Operator.CLOSE && argsNum > 1) {
                                     stack.smartPush(new ExpressionNode(Operator.TUPLE, argsNum));
                                 }
-                                else if (op == Operator.close_sq) {
+                                else if (op == Operator.CLOSE_SQ) {
                                     stack.smartPush(new ExpressionNode(Operator.LIST, argsNum));
                                 }
-                                else if (op == Operator.close_c) {
+                                else if (op == Operator.CLOSE_C) {
                                     stack.smartPush(new ExpressionNode(Operator.TUPLE, argsNum));
                                 }
                                 pushedArg(stack, opStack);
@@ -463,7 +410,7 @@ public class Expression {
                 stack.smartPush(top);
             }
             else {
-                if (opStack.peek().getOperator() != Operator.open_c) {
+                if (opStack.peek().getOperator() != Operator.OPEN_C) {
                     stack.smartPush(top);
                 }
                 else {

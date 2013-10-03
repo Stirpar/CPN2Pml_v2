@@ -22,11 +22,17 @@ public class Main {
                     "colset Natural=integer;");
             parse("colset ab =record a: int * b: int");
 
-            parse("val v = 1`1 ++ 1`2");
-            Parser.getParsedExpression("(false, 1)");
+            //parse("val v = 1`1 ++ 1`2");
+
+            //Parser.getParsedExpression("1+1");
+            Parser.getParsedExpression("(false, true)");
+
+            //Parser.getParsedExpression("(false, 1)");
+
+
             /*
-            parse("fun DeleteListElem (nil, _) = nil"+
-                    "| DeleteListElem (head::tail, n) = if head=n then  tail  else  head::DeleteListElem (tail, n)");
+            parse("fun DeleteListElem (NIL, _) = NIL"+
+                    "| DeleteListElem (head::tail, n) = if head=n THEN  tail  else  head::DeleteListElem (tail, n)");
             // */
         } catch (Throwable t) {
             t.printStackTrace(System.out);

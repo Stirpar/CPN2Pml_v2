@@ -8,7 +8,8 @@ public enum ExpressionNodeType {
 
     VARIABLE,
     CONSTANT,
-    IDENTIFIER,
+    IDENTIFIER, // TODO remove
     OPERATOR,
+    FUNCTION,
 
 }

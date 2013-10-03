@@ -257,7 +257,7 @@ System.out.println(declaredType.getId());
         return name;
     }
 
-    /* * -----------------if uncommenting this then uncomment in MsType class -------------------+/
+    /* * -----------------if uncommenting this THEN uncomment in MsType class -------------------+/
      * Sets the name of the type.
      * It is possible only if the name was not set before.
      * @return the name
@@ -267,7 +267,7 @@ System.out.println(declaredType.getId());
         else throw new UnsupportedOperationException("Type named " + name + " (id " + id + ") can't change name.");
         registerName();
     }
-    /+ + -----------------if uncommenting this then uncomment in MsType class ------------------- */
+    /+ + -----------------if uncommenting this THEN uncomment in MsType class ------------------- */
 
     @Override
     public int compareTo(Type that) {
@@ -281,7 +281,7 @@ System.out.println(declaredType.getId());
     public abstract boolean isLarge();
 
     /**
-     * If the type domain has not large number of values, then gets that number.
+     * If the type domain has not large number of values, THEN gets that number.
      * @return the number of values of the type domain
      */
     public abstract int getValuesCount();

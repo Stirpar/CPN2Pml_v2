@@ -17,6 +17,7 @@ public class ExpressionNode {
     private int value;
     private String identifier;
     private Operator operator;
+    private Function function;
     private Variable variable;
     private List<ExpressionNode> children;
     private Type expressionType;
@@ -41,7 +42,7 @@ public class ExpressionNode {
     }
     
     /**
-     * Constructs the tree node of type 'identifier' (enum element).
+     * Constructs the tree node of type 'identifier' (enum element). --------- TODO: replace id6irs by variables
      * @param identifier 
      */
     public ExpressionNode(String identifier) {
@@ -73,6 +74,21 @@ public class ExpressionNode {
         inlinePromelaExpression = varType instanceof IntType || varType instanceof BoolType || varType instanceof EnumType;
         allowAddingChildren = false;
     }
+
+
+    public ExpressionNode(Function function) {
+        this.type = ExpressionNodeType.FUNCTION;
+        this.value = function.getArity();
+        this.identifier = null;
+        this.operator = null;
+        this.function = function;
+        children = new LinkedList<ExpressionNode>();
+        expressionType = function.getType();
+        //inlinePromelaExpression = true; // ? --2do:-- check if the following two lines are correct?
+        Type varType = variable.getType();
+        inlinePromelaExpression = varType instanceof IntType || varType instanceof BoolType || varType instanceof EnumType;
+        allowAddingChildren = true;
+    }
     
     /**
      * Constructs the tree node of type 'operator' with the given arity.
@@ -98,28 +114,22 @@ public class ExpressionNode {
             case EMPTY:
             case MS:
             case MSSUM:
-            // (ommitted parts) case MSSUB: case MSMUL:
                 expressionType = Type.getMsType(Type.getAnyType());
                 break;
             case NEG:
             case PLUS: case MINUS:
             case MUL:
                 inlinePromelaExpression = true;
-                // fall
+            // --- fall through ---
             case DIV: case MOD:
-            case LENGTH:
-            case ABS:
-            case MIN: case MAX:
                 expressionType = Type.getIntType();
                 break;
-            case TRUE: case FALSE:
             case NOT:
             case AND:
             case OR:
             case LESS: case GREATER: case LESSEQ: case GREATEREQ:
                 inlinePromelaExpression = true;
-                // fall
-            case NULL:
+            // --- fall through ---
             case EQ: case NEQ:
                 expressionType = Type.getBoolType();
                 break;
@@ -129,19 +139,10 @@ public class ExpressionNode {
             case LIST:
                 expressionType = Type.getListType(Type.getAnyType());
                 break;
-            // (ommitted parts) case CASE: case PAT:
             case IF:
-            // (ommitted parts) case LET: case LOCAL: case VAL:
             case ELEM:
-            case HD:
-            case TL:
-            case REV:
             case CONCAT:
             case CONS:
-            case NTH:
-            case NTHTAIL:
-            case NTHREPLACE:
-            case RMALL:
                 expressionType = null;
             default:
                 expressionType = null;
@@ -240,22 +241,19 @@ public class ExpressionNode {
          */
         if (! allowAddingChildren) throw new RuntimeException("Adding children to node " + this + "is not allowed, because of this node is a child of some other node");
         child.allowAddingChildren = false;
-        
+
+        //
+
         treeSize += child.getTreeSize();
         if (! child.isInlinePromelaExpression()) inlinePromelaExpression = false;
         
         switch (operator) {
-            case TRUE:
-            case FALSE:
             case EMPTY:
             case UNIT:
                 throw new RuntimeException("Adding child to 0-arity operator " + operator + " is not allowed");
             case NEG:
-            case ABS:
                 if (children.size() > 0) throw new RuntimeException("Adding too much children to unary operator " + operator + " is not allowed");
-                // fall through
-            case MIN:
-            case MAX:
+        // ------ fall through ------
             case MUL:
             case DIV:
             case MOD:
@@ -277,7 +275,7 @@ public class ExpressionNode {
                 break;
             case NOT:
                 if (children.size() > 0) throw new RuntimeException("Adding too much children to unary operator " + operator + " is not allowed");
-                // fall through
+                // --- fall through ---
             case AND:
             case OR:
                 if (children.size() > 1) throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
@@ -310,8 +308,6 @@ public class ExpressionNode {
                         throw new RuntimeException("Adding too much children to ternary operator " + operator + " is not allowed");
                 }
                 break;
-            //case CASE:case PAT:
-            //case LET:case LOCAL:case VAL:
             case ELEM:
                 switch (children.size()) {
                     case 0:
@@ -328,41 +324,6 @@ public class ExpressionNode {
                         throw new RuntimeException("Adding too much children to unary operator #<num> is not allowed");
                 }
                 break;
-            case HD:
-            case TL:
-            case REV:
-            case LENGTH:
-            case NULL:
-                if (children.size() > 0) throw new RuntimeException("Adding too much children to unary operator " + operator + " is not allowed");
-                // fall through
-            case NTH:
-            case NTHTAIL:
-            case NTHREPLACE:
-                switch (children.size()) {
-                    case 0:
-                        if (! (child.getExpressionType() instanceof ListType)) throw new RuntimeException("First child of operator " + operator + " should be LIST");
-                        break;
-                    case 1:
-                        if (! (child.getExpressionType() instanceof IntType)) throw new RuntimeException("First child of operator " + operator + " should be INT");
-                        break;
-                    case 2:
-                        if (operator !=  Operator.NTHREPLACE) throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
-                        if (! expressionType.meets(
-                                Type.getListType(child.getExpressionType())
-                           )) throw new RuntimeException("Children types of operator " + operator + " do not meet");
-                        break;
-                    default:
-                        throw new RuntimeException("Adding too much children to operator " + operator + " is not allowed");
-                }
-                switch (operator) {
-                    case HD: case NTH:
-                        if (expressionType == null) expressionType = ((ListType) child.getExpressionType()).getElementType();
-                        break;
-                    case TL: case REV: case NTHTAIL: case NTHREPLACE:
-                        if (expressionType == null) expressionType = child.getExpressionType();
-                        break;
-                }
-                break;
             case CONCAT:
                 switch (children.size()) {
                     case 0:
@@ -376,7 +337,6 @@ public class ExpressionNode {
                 }
                 break;
             case CONS:
-            case RMALL:
                 switch (children.size()) {
                     case 0:
                         expressionType = Type.getListType(child.getExpressionType());
@@ -415,8 +375,6 @@ public class ExpressionNode {
                         throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
                 }
                 break;
-            /*case MSSUB:
-            case MSMUL:*/
             default:
                 throw new RuntimeException("Default alternative is not allowed");
         }

@@ -5,6 +5,7 @@ package su.nsk.iis.cpn.ml;
  * @author stirpar
  */
 public enum LexemType {
+
     DECIMAL_LITERAL,
     VARIABLE,
     CONSTANT,
