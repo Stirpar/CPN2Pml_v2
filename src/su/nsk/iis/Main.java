@@ -4,7 +4,6 @@ import su.nsk.iis.cpn.ml.IdentifierCollision;
 import su.nsk.iis.cpn.ml.Parser;
 import su.nsk.iis.cpn.ml.SyntaxError;
 import su.nsk.iis.cpn.ml.Warning;
-import su.nsk.iis.cpn.ml.types.Type;
 
 public class Main {
 
