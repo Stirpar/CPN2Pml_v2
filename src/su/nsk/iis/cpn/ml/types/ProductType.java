@@ -1,6 +1,7 @@
 package su.nsk.iis.cpn.ml.types;
 
 import su.nsk.iis.cpn.ml.IdentifierCollision;
+import su.nsk.iis.cpn.ml.TypeError;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -12,8 +13,24 @@ import java.util.List;
  */
 public class ProductType extends Type {
 
-    // =========== begin static ===========
-    static String buildId(List<Type> types) {
+    private List<Type> types;
+    private int listDegree = 0;
+
+    /**
+     * Constructs the PRODUCT type with the given name and that have elements of the given types.
+     * @param types the list of the types of the elements
+     */
+    ProductType(List<Type> types) {
+        this.types = types;
+        for (Type type : types) {
+            if (type.getListDegree() > listDegree) {
+                listDegree = type.getListDegree();
+            }
+        }
+    }
+
+    @Override
+    public String getId() {
         StringBuilder res = new StringBuilder("P(");
         for (Iterator<Type> it = types.iterator(); it.hasNext(); ) {
             Type type = it.next();
@@ -22,25 +39,6 @@ public class ProductType extends Type {
         }
         res.append(')');
         return res.toString();
-    }
-    // =========== end static ===========
-
-    private List<Type> types;
-    private int listDegree = 0;
-
-    /**
-     * Constructs the PRODUCT type with the given name and that have elements of the given types.
-     * @param name the type name, can be null but later must be specified with setName method
-     * @param types the list of the types of the elements
-     */
-    ProductType(String name, List<Type> types) throws IdentifierCollision {
-        super(name, buildId(types));
-        this.types = types;
-        for (Type type : types) {
-            if (type.getListDegree() > listDegree) {
-                listDegree = type.getListDegree();
-            }
-        }
     }
 
     /**
@@ -68,6 +66,7 @@ public class ProductType extends Type {
 
     @Override
     public boolean meets(Type that) {
+        if (that instanceof Wildcard) return that.meets(this);
         if (that instanceof ProductType) {
             ProductType pt = (ProductType) that;
             if (types.size() != pt.types.size()) return false;
@@ -76,24 +75,33 @@ public class ProductType extends Type {
             }
             return true;
         }
-        else return (that instanceof AnyType);
+        else return false;
     }
 
-
     @Override
-    public Type clarify(Type that) {
-        if (that == null) return null;
-        if (that instanceof AnyType) return this;
+    public void clarify(Type that) throws TypeError {
+        if (that == null) throw new TypeError("type error");
+        if (that instanceof Wildcard) {
+            if (((Wildcard) that).getRealType() == null) return;
+            else that = ((Wildcard) that).getRealType();
+        }
         if (that instanceof ProductType) {
             ProductType thatProduct = (ProductType) that;
-            if (types.size() != thatProduct.types.size()) return null;
+            if (types.size() != thatProduct.types.size()) throw new TypeError("type error");
 
-            List<Type> clarifiedTypes = new LinkedList<Type>();
             for (int i = 0; i < types.size(); ++i) {
-                clarifiedTypes.add( types.get(i).clarify(thatProduct.types.get(i)) );
+                types.get(i).clarify(thatProduct.types.get(i));
             }
-            return getProductType(clarifiedTypes);
         }
-        return this;
+        else throw new TypeError("type error");
+    }
+
+    @Override
+    public Type get() {
+        List<Type> gTypes = new LinkedList<Type>();
+        for (int i = 0; i < types.size(); ++i) {
+            gTypes.add(types.get(i).get());
+        }
+        return getProductType(gTypes);
     }
 }

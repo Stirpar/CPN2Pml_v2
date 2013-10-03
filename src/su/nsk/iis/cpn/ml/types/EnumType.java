@@ -3,6 +3,7 @@ package su.nsk.iis.cpn.ml.types;
 import su.nsk.iis.cpn.ml.IdentifierCollision;
 import su.nsk.iis.cpn.ml.IdentifierManager;
 import su.nsk.iis.cpn.ml.IdentifierType;
+import su.nsk.iis.cpn.ml.TypeError;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -30,16 +31,6 @@ public class EnumType extends Type {
     public static EnumType getElementType(String element) {
         return typeOfElement.get(element);
     }
-
-    static String buildId(List<String> elements) {
-        StringBuilder res = new StringBuilder("E<");
-        for (Iterator<String> it = elements.iterator(); it.hasNext(); ) {
-            res.append(it.next());
-            if (it.hasNext()) res.append(',');
-        }
-        res.append('>');
-        return res.toString();
-    }
     // =========== end static ===========
 
 
@@ -48,11 +39,9 @@ public class EnumType extends Type {
 
     /**
      * Constructs the ENUM type with the given name and elements.
-     * @param name the name
      * @param elements the list of the elements
      */
-    EnumType(String name, List<String> elements) throws IdentifierCollision {
-        super(name, buildId(elements));
+    EnumType(List<String> elements) throws IdentifierCollision {
         this.elements = elements;
         elements_rev = new HashMap<String, Integer>();
         int i = 0;
@@ -62,7 +51,18 @@ public class EnumType extends Type {
             elements_rev.put(elementName, i++);
         }
     }
-    
+
+    @Override
+    public String getId() {
+        StringBuilder res = new StringBuilder("E<");
+        for (Iterator<String> it = elements.iterator(); it.hasNext(); ) {
+            res.append(it.next());
+            if (it.hasNext()) res.append(',');
+        }
+        res.append('>');
+        return res.toString();
+    }
+
     /**
      * Gets the list of element identifiers.
      * The order of identifiers in the list corresponds their integer values.
@@ -97,13 +97,17 @@ public class EnumType extends Type {
 
     @Override
     public boolean meets(Type that) {
-        if (that instanceof AnyType) return true;
+        if (that instanceof Wildcard) return that.meets(this);
         return (this.equals(that)); // is it right?
     }
 
     @Override
-    public Type clarify(Type that) {
-        if (that == null || !meets(that)) return null;
+    public void clarify(Type that) throws TypeError {
+        if ((that == null) || !meets(that)) throw new TypeError("type error");
+    }
+
+    @Override
+    public Type get() {
         return this;
     }
 }

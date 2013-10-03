@@ -5,7 +5,7 @@ import su.nsk.iis.cpn.ml.types.Type;
 public class Parser {
 
     // =========== begin static ===========
-    public static void parseDeclaration(String declaration) throws SyntaxError, IdentifierCollision, Warning {
+    public static void parseDeclaration(String declaration) throws SyntaxError, IdentifierCollision, Warning, TypeError {
         Lexer lexer = new Lexer(declaration);
         Lexem firstLexem = lexer.curLexem();
         lexer.nextLexem();
@@ -19,7 +19,7 @@ public class Parser {
         else throw new Warning("Declaration: \'" + declaration + "\' was ignored");
     }
 
-    public static Expression getParsedExpression(String declaration) throws SyntaxError {
+    public static Expression getParsedExpression(String declaration) throws SyntaxError, TypeError {
         Lexer lexer = new Lexer(declaration);
         return new Expression(lexer);
     }

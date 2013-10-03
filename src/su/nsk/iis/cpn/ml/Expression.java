@@ -71,7 +71,6 @@ public class Expression {
         operators.put("then", Operator.THEN);
         operators.put("else", Operator.ELSE);
         operators.put("nil", Operator.NIL);
-        operators.put("empty", Operator.EMPTY);
         operators.put("#", Operator.ELEM);
         operators.put("::", Operator.CONS);
         operators.put("^^", Operator.CONCAT);
@@ -110,6 +109,9 @@ public class Expression {
         ++i;
         priority.put(Operator.CONS, i);
         ++i;
+        priority.put(Operator.TIME, i); // where should it be?
+        priority.put(Operator.ADDTIME, i);
+        ++i;
         priority.put(Operator.IF, i);
         priority.put(Operator.THEN, i);
         priority.put(Operator.ELSE, i);
@@ -117,9 +119,6 @@ public class Expression {
         priority.put(Operator.OPEN, i);
         priority.put(Operator.OPEN_SQ, i);
         priority.put(Operator.OPEN_C, i);
-        ++i;
-        priority.put(Operator.TIME, i);
-        priority.put(Operator.ADDTIME, i);
 
 
         arity.put(Operator.NEG, 1);
@@ -142,7 +141,6 @@ public class Expression {
         arity.put(Operator.CONCAT, 2);
         arity.put(Operator.MS, 2);
         arity.put(Operator.MSSUM, 2);
-        arity.put(Operator.EMPTY, 0);
         arity.put(Operator.UNIT, 0);
         arity.put(Operator.TIME, 2);
         arity.put(Operator.ADDTIME, 2);
@@ -168,7 +166,6 @@ public class Expression {
         fixity.put(Operator.CONCAT, Fixity.INFIX_LTR);
         fixity.put(Operator.MS, Fixity.INFIX_LTR);
         fixity.put(Operator.MSSUM, Fixity.INFIX_LTR);
-        fixity.put(Operator.EMPTY, Fixity.PREFIX);
         fixity.put(Operator.UNIT, Fixity.PREFIX);
         fixity.put(Operator.TIME, Fixity.INFIX_LTR);
         fixity.put(Operator.ADDTIME, Fixity.INFIX_LTR);
@@ -195,12 +192,8 @@ public class Expression {
          * @return the pushed node
          * @throws su.nsk.iis.cpn.ml.SyntaxError if syntax error occures
          */
-        public ExpressionNode smartPush(ExpressionNode node) throws SyntaxError {
-            if (node.isOperator()) {
-                if (node.getOperator() == Operator.IF) {
-                    if (node.getValue() != 3) throw new SyntaxError("Incorrect IF-THEN-ELSE statement");
-                }
-
+        public ExpressionNode smartPush(ExpressionNode node) throws SyntaxError, TypeError {
+            if (node.isOperator() || node.isFunction()) {
                 for (int i = 0; i < node.getValue(); ++i) {
                     if (empty()) throw new SyntaxError("Incorrect number of arguments for operator \'" + node.getOperator() + "\' (must be " + node.getValue() + ")");
                     rev.push(pop());
@@ -220,14 +213,14 @@ public class Expression {
      * @param opStack the operators stack
      * @throws su.nsk.iis.cpn.ml.SyntaxError if syntax error occures
      */
-    private void pushedArg(SmartStack stack, Stack <ExpressionNode> opStack) throws SyntaxError {
+    private void pushedArg(SmartStack stack, Stack <ExpressionNode> opStack) throws SyntaxError, TypeError {
         if (! opStack.empty()) {
             ExpressionNode top = opStack.peek();
             Operator op = top.getOperator();
             if (fixity.get(op) == Fixity.PREFIX) {
                 opStack.pop();
                 int v = top.getValue() + 1;
-                top = new ExpressionNode(op, v);
+                top = new ExpressionNode(new Function(op));
                 if (v == arity.get(op)) {
                     stack.smartPush(top);
                     pushedArg(stack, opStack);
@@ -242,7 +235,7 @@ public class Expression {
      * @param lexer the lexer
      * @throws su.nsk.iis.cpn.ml.SyntaxError if syntax error occures
      */
-    public Expression(Lexer lexer) throws SyntaxError {
+    public Expression(Lexer lexer) throws SyntaxError, TypeError {
         SmartStack stack = new SmartStack();
         Stack <ExpressionNode> opStack = new Stack<ExpressionNode>();
         Lexem prevLexem = null;
@@ -256,10 +249,6 @@ public class Expression {
                             stack.smartPush( new ExpressionNode(Operator.LIST, 0) );
                             pushedArg(stack, opStack);
                             break;
-                        case EMPTY:
-                            stack.smartPush( new ExpressionNode(op, arity.get(op)) );
-                            pushedArg(stack, opStack);
-                            break;
                         case IF:
                             if (! opStack.empty()) {
                                 switch (opStack.peek().getOperator()) {
@@ -271,7 +260,7 @@ public class Expression {
                                         throw new SyntaxError("IF-THEN-ELSE statement must be in brackets");
                                 }
                             }
-                            opStack.push( new ExpressionNode(op, 1) );
+                            opStack.push( new ExpressionNode(Operator.IF, 1) );
                             break;
                         case THEN:
                         case ELSE:
@@ -300,15 +289,15 @@ public class Expression {
                         case CLOSE_SQ:
                         case CLOSE_C:
                             // <>
-                            if (prevLexem.getString().equals("[") && op == Operator.CLOSE_SQ) {
+                            if (prevLexem.getString().equals("[") && op == Operator.CLOSE_SQ) { // detect nil
                                 opStack.pop();
                                 stack.smartPush(new ExpressionNode(Operator.LIST, 0));
                                 pushedArg(stack, opStack);
                                 break;
                             }
-                            if (prevLexem.getString().equals("(") && op == Operator.CLOSE) {
+                            if (prevLexem.getString().equals("(") && op == Operator.CLOSE) { // detect unit
                                 opStack.pop();
-                                stack.smartPush(new ExpressionNode(Operator.UNIT, 0));
+                                stack.smartPush(new ExpressionNode(new Function(Operator.UNIT)));
                                 pushedArg(stack, opStack);
                                 break;
                             }
@@ -352,6 +341,7 @@ public class Expression {
                                 else if (op == Operator.CLOSE_C) {
                                     stack.smartPush(new ExpressionNode(Operator.TUPLE, argsNum));
                                 }
+                                //nothing forgot?
                                 pushedArg(stack, opStack);
                             }
                             break;
@@ -359,7 +349,7 @@ public class Expression {
                             int curPriority;
                             switch (fixity.get(op)) {
                                 case PREFIX:
-                                    opStack.push( new ExpressionNode(op, 0) );
+                                    opStack.push( new ExpressionNode(new Function(op)));
                                     break;
                                 case INFIX_LTR:
                                     curPriority = priority.get( op );
@@ -370,7 +360,7 @@ public class Expression {
                                         stack.smartPush(top);
                                         opStack.pop();
                                     }
-                                    opStack.push( new ExpressionNode(op, arity.get(op)) );
+                                    opStack.push( new ExpressionNode(new Function(op)) );
                                     break;
                                 case INFIX_RTL:
                                     curPriority = priority.get( op );
@@ -381,7 +371,7 @@ public class Expression {
                                         stack.smartPush(top);
                                         opStack.pop();
                                     }
-                                    opStack.push( new ExpressionNode(op, arity.get(op)) );
+                                    opStack.push( new ExpressionNode(new Function(op)) );
                                     break;
                                 default:
                             }
@@ -392,12 +382,12 @@ public class Expression {
                     stack.smartPush( new ExpressionNode( Variable.getVariableByName(lexem.getString()) ) );
                     pushedArg(stack, opStack);
                     break;
-                case IDENTIFIER:
+                /*case IDENTIFIER:
                     stack.smartPush( new ExpressionNode( lexem.getString() ) );
                     pushedArg(stack, opStack);
-                    break;
+                    break;*/
                 case DECIMAL_LITERAL:
-                    //
+                    // todo check litaral
                     stack.smartPush( new ExpressionNode( Integer.parseInt(lexem.getString()) ) );
                     pushedArg(stack, opStack);
                     break;

@@ -1,6 +1,7 @@
 package su.nsk.iis.cpn.ml.types;
 
 import su.nsk.iis.cpn.ml.IdentifierCollision;
+import su.nsk.iis.cpn.ml.TypeError;
 
 /**
  * Class representing the BOOL type.
@@ -8,27 +9,9 @@ import su.nsk.iis.cpn.ml.IdentifierCollision;
  */
 public class BoolType extends Type {
 
-    // =========== begin static ===========
-    static String buildId() {
-        return "B";
-    }
-
-    private static BoolType instance;
-    static {
-        try {
-            instance = new BoolType();
-        } catch (IdentifierCollision identifierCollision) {
-            throw new RuntimeException("SUDDENLY bool declarated before instantiation of bool type");
-        }
-    }
-    // =========== end static ===========
-
-
-    /**
-     * Constructs the type.
-     */
-    BoolType() throws IdentifierCollision {
-        super("bool", buildId());
+    @Override
+    public String getId() {
+        return "bool";
     }
 
     @Override
@@ -48,12 +31,17 @@ public class BoolType extends Type {
 
     @Override
     public boolean meets(Type that) {
-        return (that instanceof BoolType) || (that instanceof AnyType);
+        if (that instanceof Wildcard) return that.meets(this);
+        return (that instanceof BoolType);
     }
 
     @Override
-    public Type clarify(Type that) {
-        if (that == null || !meets(that)) return null;
+    public void clarify(Type that) throws TypeError {
+        if ((that == null) || !meets(that)) throw new TypeError("type error");
+    }
+
+    @Override
+    public Type get() {
         return this;
     }
 }

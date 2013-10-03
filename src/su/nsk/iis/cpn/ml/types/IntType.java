@@ -1,6 +1,7 @@
 package su.nsk.iis.cpn.ml.types;
 
 import su.nsk.iis.cpn.ml.IdentifierCollision;
+import su.nsk.iis.cpn.ml.TypeError;
 
 /**
  * Integer type class.
@@ -8,26 +9,9 @@ import su.nsk.iis.cpn.ml.IdentifierCollision;
  */
 public class IntType extends Type {
 
-    // =========== begin static ===========
-    static String buildId() {
-        return "I";
-    }
-
-    private static final IntType instance;
-    static {
-        try {
-            instance = new IntType();
-        } catch (IdentifierCollision identifierCollision) {
-            throw new RuntimeException("SUDDENLY int declarated before instantiation of int type");
-        }
-    }
-    // =========== end static ===========
-
-    /**
-     * Constructs the type.
-     */
-    IntType() throws IdentifierCollision {
-        super("int", buildId());
+    @Override
+    public String getId() {
+        return "int";
     }
 
     @Override
@@ -47,12 +31,17 @@ public class IntType extends Type {
 
     @Override
     public boolean meets(Type that) {
-        return (that instanceof IntType) || (that instanceof AnyType);
+        if (that instanceof Wildcard) return that.meets(this);
+        return (that instanceof IntType);
     }
 
     @Override
-    public Type clarify(Type that) {
-        if (that == null || !meets(that)) return null;
+    public void clarify(Type that) throws TypeError {
+        if ((that == null) || !meets(that)) throw new TypeError("type error");
+    }
+
+    @Override
+    public Type get() {
         return this;
     }
 }

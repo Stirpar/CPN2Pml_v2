@@ -33,8 +33,7 @@ public enum Operator {
 
     //ms
     MS,
-    MSSUM, //, MSSUB, MSMUL,
-    EMPTY,
+    MSSUM,
 
     // time
     TIME, ADDTIME,

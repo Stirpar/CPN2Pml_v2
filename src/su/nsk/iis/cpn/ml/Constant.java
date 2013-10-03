@@ -6,7 +6,7 @@ package su.nsk.iis.cpn.ml;
 public class Constant extends Variable {
 
     // =========== begin static ===========
-    public static void declare(Lexer lexer) throws SyntaxError {
+    public static void declare(Lexer lexer) throws SyntaxError, TypeError {
         Lexem nameLexem = lexer.curLexem();
         lexer.nextLexem("=");
         lexer.nextLexem();

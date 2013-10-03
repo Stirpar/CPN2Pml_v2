@@ -1,19 +1,13 @@
 package su.nsk.iis.cpn.ml.types;
 
 import su.nsk.iis.cpn.ml.IdentifierCollision;
+import su.nsk.iis.cpn.ml.TypeError;
 
 /**
  * Multiset type class.
  * @author stirpar
  */
 public class MsType extends Type {
-
-    // =========== begin static ===========
-    static String buildId(Type elementType) {
-        return "M{" + elementType.getId() + "}";
-    }
-    // =========== end static ===========
-
 
     private Type elementType;
     //private int capacity;
@@ -22,9 +16,13 @@ public class MsType extends Type {
      * Constructs the multiset type that have elements of the given type.
      * @param elementType the element type
      */
-    MsType(Type elementType) throws IdentifierCollision {
-        super(null, buildId(elementType));
+    MsType(Type elementType) {
         this.elementType = elementType;
+    }
+
+    @Override
+    public String getId() {
+        return "M{" + elementType.getId() + "}";
     }
 
     /** Gets the element type.
@@ -51,20 +49,29 @@ public class MsType extends Type {
 
     @Override
     public boolean meets(Type that) {
+        if (that instanceof Wildcard) return that.meets(this);
         if (that instanceof MsType) {
             return elementType.meets( ((MsType) that).elementType );
         }
-        else return (that instanceof AnyType);
+        else return false;
+    }
+
+
+    @Override
+    public void clarify(Type that) throws TypeError {
+        if (that == null) throw new TypeError("type error");
+        if (that instanceof Wildcard) {
+            if (((Wildcard) that).getRealType() == null) return;
+            else that = ((Wildcard) that).getRealType();
+        }
+        if (that instanceof MsType) {
+            elementType.clarify( ((MsType)that).elementType );
+        }
+        else throw new TypeError("type error");
     }
 
     @Override
-    public Type clarify(Type that) {
-        if (that == null) return null;
-        if (that instanceof AnyType) return this;
-        if (that instanceof MsType) {
-            Type clarifiedElementType = elementType.clarify( ((MsType)that).elementType );
-            return getMsType(clarifiedElementType);
-        }
-        return this;
+    public Type get() {
+        return getTimedType(elementType.get());
     }
 }

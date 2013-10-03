@@ -1,6 +1,7 @@
 package su.nsk.iis.cpn.ml.types;
 
 import su.nsk.iis.cpn.ml.IdentifierCollision;
+import su.nsk.iis.cpn.ml.TypeError;
 
 /**
  * Class representing the UNIT type.
@@ -8,27 +9,9 @@ import su.nsk.iis.cpn.ml.IdentifierCollision;
  */
 public class UnitType extends Type {
 
-    // =========== begin static ===========
-    static String buildId() {
-        return "U";
-    }
-
-    private static final UnitType instance;
-    static {
-        try {
-            instance = new UnitType();
-        } catch (IdentifierCollision identifierCollision) {
-            throw new RuntimeException("SUDDENLY unit declarated before instantiation of unit type");
-        }
-    }
-    // =========== end static ===========
-
-
-    /**
-     * Constructs the type.
-     */
-    UnitType() throws IdentifierCollision {
-        super("unit", buildId());
+    @Override
+    public String getId() {
+        return "unit";
     }
 
     @Override
@@ -48,12 +31,17 @@ public class UnitType extends Type {
 
     @Override
     public boolean meets(Type that) {
-        return (that instanceof UnitType) || (that instanceof AnyType);
+        if (that instanceof Wildcard) return that.meets(this);
+        return (that instanceof UnitType);
     }
 
     @Override
-    public Type clarify(Type that) {
-        if (that == null || !meets(that)) return null;
+    public void clarify(Type that) throws TypeError {
+        if ((that == null) || !meets(that)) throw new TypeError("type error");
+    }
+
+    @Override
+    public Type get() {
         return this;
     }
 }

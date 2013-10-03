@@ -1,21 +1,19 @@
 package su.nsk.iis.cpn.ml.types;
 
 import su.nsk.iis.cpn.ml.IdentifierCollision;
+import su.nsk.iis.cpn.ml.TypeError;
 
 public class TimedType extends Type {
 
-    // =========== begin static ===========
-    static String buildId(Type innerType) {
-        return "T`" + innerType.getId() + "\'";
-    }
-    // =========== end static ===========
-
-
     private Type innerType;
 
-    TimedType(String name, Type innerType) throws IdentifierCollision {
-        super(name, buildId(innerType));
+    TimedType(Type innerType) {
         this.innerType = innerType;
+    }
+
+    @Override
+    public String getId() {
+        return "T`" + innerType.getId() + "\'";
     }
 
     /** Gets the element type.
@@ -42,20 +40,28 @@ public class TimedType extends Type {
 
     @Override
     public boolean meets(Type that) {
+        if (that instanceof Wildcard) return that.meets(this);
         if (that instanceof TimedType) {
             return innerType.meets( ((TimedType) that).innerType );
         }
-        else return (that instanceof AnyType);
+        else return false;
     }
 
     @Override
-    public Type clarify(Type that) {
-        if (that == null) return null;
-        if (that instanceof AnyType) return this;
-        if (that instanceof TimedType) {
-            Type clarifiedInnerType = innerType.clarify( ((TimedType)that).innerType );
-            return getTimedType(clarifiedInnerType);
+    public void clarify(Type that) throws TypeError {
+        if (that == null) throw new TypeError("type error");
+        if (that instanceof Wildcard) {
+            if (((Wildcard) that).getRealType() == null) return;
+            else that = ((Wildcard) that).getRealType();
         }
-        return this;
+        if (that instanceof TimedType) {
+            innerType.clarify( ((TimedType)that).innerType );
+        }
+        else throw new TypeError("type error");
+    }
+
+    @Override
+    public Type get() {
+        return getTimedType(innerType.get());
     }
 }

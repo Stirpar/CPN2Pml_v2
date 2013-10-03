@@ -84,10 +84,8 @@ public class ExpressionNode {
         this.function = function;
         children = new LinkedList<ExpressionNode>();
         expressionType = function.getType();
-        //inlinePromelaExpression = true; // ? --2do:-- check if the following two lines are correct?
-        Type varType = variable.getType();
-        inlinePromelaExpression = varType instanceof IntType || varType instanceof BoolType || varType instanceof EnumType;
-        allowAddingChildren = true;
+        //inlinePromelaExpression = ?
+        allowAddingChildren = function.getArity() > children.size();
     }
     
     /**
@@ -105,48 +103,19 @@ public class ExpressionNode {
         
         inlinePromelaExpression = false;
         allowAddingChildren = true;
-        
+
         switch (operator) {
-            case UNIT:
-                expressionType = Type.getUnitType();
-                //inline?
-                break;
-            case EMPTY:
-            case MS:
-            case MSSUM:
-                expressionType = Type.getMsType(Type.getAnyType());
-                break;
-            case NEG:
-            case PLUS: case MINUS:
-            case MUL:
-                inlinePromelaExpression = true;
-            // --- fall through ---
-            case DIV: case MOD:
-                expressionType = Type.getIntType();
-                break;
-            case NOT:
-            case AND:
-            case OR:
-            case LESS: case GREATER: case LESSEQ: case GREATEREQ:
-                inlinePromelaExpression = true;
-            // --- fall through ---
-            case EQ: case NEQ:
-                expressionType = Type.getBoolType();
-                break;
             case TUPLE:
                 expressionType = Type.getProductType(new LinkedList<Type>()); // hmmm...
                 break;
+
             case LIST:
-                expressionType = Type.getListType(Type.getAnyType());
+                expressionType = Type.getListType(Type.getWildcard());
                 break;
-            case IF:
+
             case ELEM:
-            case CONCAT:
-            case CONS:
-                expressionType = null;
-            default:
-                expressionType = null;
-        }        
+                expressionType = null; //?
+        }
     }
     
     /**
@@ -164,12 +133,19 @@ public class ExpressionNode {
     public boolean isOperator() {
         return type == ExpressionNodeType.OPERATOR;
     }
+
+    public boolean isFunction() {
+        return type == ExpressionNodeType.FUNCTION;
+    }
     
     /**
      * Gets the operator.
      * @return the opertor if the tree node's type is 'operator', null otherwise
      */
     public Operator getOperator() {
+        // *** hack ***
+        if (type == ExpressionNodeType.FUNCTION) return function.getOperator();
+
         return operator;
     }
     
@@ -234,151 +210,64 @@ public class ExpressionNode {
      * Adds the child node to the tree node.
      * @param child the child node
      */
-    void addChild(ExpressionNode child) {
+    void addChild(ExpressionNode child) throws TypeError {
         /*
          * after adding node Ch as a child to some node
          * adding children to Ch should be disabled
          */
         if (! allowAddingChildren) throw new RuntimeException("Adding children to node " + this + "is not allowed, because of this node is a child of some other node");
         child.allowAddingChildren = false;
-
-        //
+        if (child.children != null) {
+            if (child.children.size() < child.value) throw new RuntimeException("Too few children nodes");
+        }
 
         treeSize += child.getTreeSize();
         if (! child.isInlinePromelaExpression()) inlinePromelaExpression = false;
-        
-        switch (operator) {
-            case EMPTY:
-            case UNIT:
-                throw new RuntimeException("Adding child to 0-arity operator " + operator + " is not allowed");
-            case NEG:
-                if (children.size() > 0) throw new RuntimeException("Adding too much children to unary operator " + operator + " is not allowed");
-        // ------ fall through ------
-            case MUL:
-            case DIV:
-            case MOD:
-            case PLUS:
-            case MINUS:
-            case LESS:
-            case GREATER:
-            case LESSEQ:
-            case GREATEREQ:    
-                if (children.size() > 1) throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
-                if (! (child.getExpressionType() instanceof IntType)) throw new RuntimeException("Child of operator " + operator + " should have INT type");
-                break;
-            case EQ:
-            case NEQ:
-                if (children.size() > 1) throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
-                if (children.size() == 1) {
-                    if (! children.get(0).getExpressionType().meets(child.getExpressionType())) throw new RuntimeException("Uncompatible types of " + operator + " children");
-                }
-                break;
-            case NOT:
-                if (children.size() > 0) throw new RuntimeException("Adding too much children to unary operator " + operator + " is not allowed");
-                // --- fall through ---
-            case AND:
-            case OR:
-                if (children.size() > 1) throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
-                if (! (child.getExpressionType() instanceof BoolType)) throw new RuntimeException("Child of operator " + operator + " should have BOOL type");
-                break;
-            case TUPLE:
-                List<Type> ts = new LinkedList<Type>( ((ProductType) expressionType).getTypes() );
-                ts.add(child.getExpressionType());
-                expressionType = Type.getProductType(ts); // optimize?
-                break;
-            case LIST:
-                Type elType = ((ListType) expressionType).getElementType();
-                if (elType instanceof AnyType) expressionType = Type.getListType(child.getExpressionType());
-                else {
-                    if (! elType.meets(child.getExpressionType())) throw new RuntimeException("Uncompatible types of _list_ children");
-                }
-                break;
-            case IF:
-                switch (children.size()) {
-                    case 0:
-                        if (! (child.getExpressionType() instanceof BoolType)) throw new RuntimeException("First child of operator " + operator + " should have BOOL type");
-                        break;
-                    case 1:
-                        expressionType = child.getExpressionType();
-                        break;
-                    case 2:
-                        if (! expressionType.meets(child.getExpressionType())) throw new RuntimeException("Uncompatible types of _if_ children");
-                        break;
-                    default:
-                        throw new RuntimeException("Adding too much children to ternary operator " + operator + " is not allowed");
-                }
-                break;
-            case ELEM:
-                switch (children.size()) {
-                    case 0:
-                        if (child.getType() != ExpressionNodeType.CONSTANT) throw new RuntimeException("#<num> operator incorrect");
-                        break;
-                    case 1:
-                        if (! (child.getExpressionType() instanceof ProductType)) throw new RuntimeException("#<num> child should be tuple");
-                        ProductType pt = (ProductType) child.getExpressionType();
-                        int v = children.get(0).getValue();
-                        if (v <= 0 || v > pt.getTypes().size()) throw new RuntimeException("#<num> number does not meet the tuple size");
-                        expressionType = pt.getTypes().get(v - 1);
-                        break;
-                    default:
-                        throw new RuntimeException("Adding too much children to unary operator #<num> is not allowed");
-                }
-                break;
-            case CONCAT:
-                switch (children.size()) {
-                    case 0:
-                        expressionType = child.getExpressionType();
-                        break;
-                    case 1:
-                        if (! expressionType.meets(child.getExpressionType())) throw new RuntimeException("Children types of operator " + operator + " do not meet");
-                        break;
-                    default:
-                        throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
-                }
-                break;
-            case CONS:
-                switch (children.size()) {
-                    case 0:
-                        expressionType = Type.getListType(child.getExpressionType());
-                        break;
-                    case 1:
-                        if (! expressionType.meets(child.getExpressionType())) throw new RuntimeException("Children types of operator " + operator + " do not meet");
-                        break;
-                    default:
-                        throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
-                }                
-                break;
-            case MS:
-                switch (children.size()) {
-                    case 0:
-                        if (! (child.getExpressionType() instanceof IntType)) throw new RuntimeException("First child of operator " + operator + " should be INT");
-                        break;
-                    case 1:
-                        expressionType = Type.getMsType(child.getExpressionType());
-                        break;
-                    default:
-                        throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
-                }
-                break;
-            case MSSUM:
-                if (! (child.getExpressionType() instanceof MsType)) throw new RuntimeException("Mssum child should be multiset");
-                switch (children.size()) {
-                    case 0:
-                        expressionType = child.getExpressionType();
-                        break;
-                    case 1:
-                        if (! expressionType.meets(child.getExpressionType())) {
-                            throw new RuntimeException("Uncompatible types of mssum children");
-                        }
-                        break;
-                    default:
-                        throw new RuntimeException("Adding too much children to binary operator " + operator + " is not allowed");
-                }
-                break;
-            default:
-                throw new RuntimeException("Default alternative is not allowed");
+
+        if (function != null) {
+            List<Type> argT = function.getArgumentTypes();
+            argT.get(children.size()).clarify(child.expressionType);
+            children.add(child);
+
+            expressionType = function.getType().get();
         }
-        children.add(child);
+        else if (operator != null) {
+            switch (operator) {
+                case TUPLE:
+                    List<Type> ts = new LinkedList<Type>( ((ProductType) expressionType).getTypes() );
+                    ts.add(child.getExpressionType());
+                    expressionType = Type.getProductType(ts); // optimize?
+                    break;
+
+                case LIST:
+                    Type elType = ((ListType) expressionType).getElementType();
+                    if (elType instanceof Wildcard) expressionType = Type.getListType(child.getExpressionType());
+                    else if (! elType.meets(child.getExpressionType())) throw new RuntimeException("Uncompatible types of _list_ children");
+                    break;
+
+                case ELEM:
+                    switch (children.size()) {
+                        case 0:
+                            if (child.getType() != ExpressionNodeType.CONSTANT) throw new RuntimeException("#<num> operator incorrect");
+                            break;
+                        case 1:
+                            if (! (child.getExpressionType() instanceof ProductType)) throw new RuntimeException("#<num> child should be tuple");
+                            ProductType pt = (ProductType) child.getExpressionType();
+                            int v = children.get(0).getValue();
+                            if (v <= 0 || v > pt.getTypes().size()) throw new RuntimeException("#<num> number does not meet the tuple size");
+                            expressionType = pt.getTypes().get(v - 1);
+                            break;
+                        default:
+                            throw new RuntimeException("Adding too much children to unary operator #<num> is not allowed");
+                    }
+                    break;
+
+                default:
+                    throw new RuntimeException("Default alternative is not allowed");
+            }
+            children.add(child);
+        }
+        else throw new RuntimeException();
     }
     
     private boolean expressionTypeMeets(ExpressionNode node) {
@@ -445,9 +334,9 @@ public class ExpressionNode {
         }
     }
     
-    /**
+    /* *
      * Prints tree node with children as XML document.
-     */
+     * /
     void printXML() {
         if (children == null) {
             System.err.println("<" + this + " />");
@@ -462,5 +351,5 @@ public class ExpressionNode {
             tr.printXML();
         }
         System.err.println("</" + this + ">");
-    }
+    }*/
 }

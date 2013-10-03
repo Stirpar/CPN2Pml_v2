@@ -35,7 +35,7 @@ public class Variable implements Comparable<Variable> {
         variableMap.put(name, new Variable(name, type));
     }
 
-    public static void declare(Lexer lexer) throws SyntaxError, IdentifierCollision {
+    public static void declare(Lexer lexer) throws SyntaxError, IdentifierCollision, TypeError {
         List<Lexem> nameLexems = lexer.getLexems(",");
         if (! lexer.curLexemEquals(":")) throw new SyntaxError("Missed \':\' in variable declaration");
         Lexem typeNameLexem = lexer.nextLexem();

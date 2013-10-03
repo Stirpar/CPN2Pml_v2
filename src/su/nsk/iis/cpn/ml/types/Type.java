@@ -15,13 +15,17 @@ public abstract class Type implements Comparable<Type> {
 
     // =========== begin static ===========
     private static Map<String, Type> typeByName = new HashMap<String, Type>();
-    private static Map<String, Type> typeById = new HashMap<String, Type>();
+    private static Map<String, String> nameById = new HashMap<String, String>();
+
+    private static Type intTypeInstance = new IntType();
+    private static Type boolTypeInstance = new BoolType();
+    private static Type unitTypeInstance = new UnitType();
 
     static {
-        IntType.buildId();
-        BoolType.buildId();
-        UnitType.buildId();
-        AnyType.buildId();
+        typeByName.put("int", intTypeInstance);
+        typeByName.put("bool", boolTypeInstance);
+        typeByName.put("unit", unitTypeInstance);
+
     }
 
     public static Type getTypeByName(String name) {
@@ -104,140 +108,55 @@ System.out.println(declaredType.getId());
     }
 
     public static Type getIntType() {
-        return typeById.get(IntType.buildId());
+        return intTypeInstance;
     }
 
     public static Type getBoolType() {
-        return typeById.get(BoolType.buildId());
+        return boolTypeInstance;
     }
 
     public static Type getUnitType() {
-        return typeById.get(UnitType.buildId());
+        return unitTypeInstance;
     }
 
-    public static Type getAnyType() {
-        return typeById.get(AnyType.buildId());
+    public static Type getWildcard() {
+        return new Wildcard();
     }
 
     public static Type getMsType(Type elementType) {
-        try {
-            Type res = typeById.get(MsType.buildId(elementType));
-            return (res == null) ? new MsType(elementType) : res;
-        } catch (IdentifierCollision identifierCollision) {
-            throw new RuntimeException("SUDDENLY null identifier is used");
-        }
-    }
-
-    public static Type getListType(String name, Type elementType) throws IdentifierCollision {
-        Type res = typeById.get(ListType.buildId(elementType));
-        if (res == null) return new ListType(name, elementType);
-
-        res.registerAlias(name);
-        return res;
+        return new MsType(elementType);
     }
 
     public static Type getListType(Type elementType) {
-        try {
-            return getListType(null, elementType);
-        } catch (IdentifierCollision identifierCollision) {
-            throw new RuntimeException("SUDDENLY null identifier is used");
-        }
-    }
-
-    public static Type getProductType(String name, List<Type> types) throws IdentifierCollision {
-        Type res = typeById.get(ProductType.buildId(types));
-        if (res == null) return new ProductType(name, types);
-
-        res.registerAlias(name);
-        return res;
+        return new ListType(elementType);
     }
 
     public static Type getProductType(List<Type> types) {
-        try {
-            return getProductType(null, types);
-        } catch (IdentifierCollision identifierCollision) {
-            throw new RuntimeException("SUDDENLY null identifier is used");
-        }
+        return new ProductType(types);
     }
 
-    public static Type getRecordType(String name, List<RecordType.Entry> entries) throws IdentifierCollision {
-        Type res = typeById.get(RecordType.buildId(entries));
-        if (res == null) return new RecordType(name, entries);
-
-        res.registerAlias(name);
-        return res;
-    }
-
-    public static Type getRecordType(List<RecordType.Entry> entries) {
-        try {
-            return getRecordType(null, entries);
-        } catch (IdentifierCollision identifierCollision) {
-            throw new RuntimeException("SUDDENLY null identifier is used");
-        }
-    }
-
-    public static Type getTimedType(String name, Type innerType) throws IdentifierCollision {
-        Type res = typeById.get(TimedType.buildId(innerType));
-        if (res == null) return new TimedType(name, innerType);
-
-        res.registerAlias(name);
-        return res;
+    public static Type getRecordType(List<RecordType.Entry> entries) throws IdentifierCollision {
+        return new RecordType(entries);
     }
 
     public static Type getTimedType(Type innerType) {
-        try {
-            return getTimedType(null, innerType);
-        } catch (IdentifierCollision identifierCollision) {
-            throw new RuntimeException("SUDDENLY null identifier is used");
-        }
+        return new TimedType(innerType);
     }
 
-    public static Type getEnumType(String name, List<String> elements) throws IdentifierCollision {
-        Type res = typeById.get(EnumType.buildId(elements));
-        if (res == null) return new EnumType(name, elements);
-
-        res.registerAlias(name);
-        return res;
-    }
-
-    public static Type getEnumType(List<String> elements) {
-        try {
-            return getEnumType(null, elements);
-        } catch (IdentifierCollision identifierCollision) {
-            throw new RuntimeException("SUDDENLY null identifier is used");
-        }
+    public static Type getEnumType(List<String> elements) throws IdentifierCollision {
+        return new EnumType(elements);
     }
     // =========== end static ===========
 
 
-    private String name;
-    private String id;
-
-    /**
-     * Constructs the type instance.
-     * @param name the name assigned to the type
-     * @param id the ID of the type
-     */
-    Type(String name, String id) throws IdentifierCollision {
-        this.name = name;
-        this.id = id;
-        registerName();
-        registerId();
-    }
-
-    private void registerName() throws IdentifierCollision {
-        registerAlias(name);
-    }
-
     private void registerAlias(String alias) throws IdentifierCollision {
         if (alias == null) return;
-        if (name == null) name = alias;
+        String id = getId();
+        if (nameById.get(id) == null) {
+            nameById.put(id, alias);
+        }
         IdentifierManager.registerIdentifier(alias, IdentifierType.TYPE);
         typeByName.put(alias, this);
-    }
-
-    private void registerId() {
-        typeById.put(id, this);
     }
 
     /**
@@ -245,29 +164,13 @@ System.out.println(declaredType.getId());
      * IDs of two types are different iff the types are different.
      * @return the id
      */
-    public String getId() {
-        return id;
-    }
+    public abstract String getId();
 
-    /**
-     * Gets the name of the type.
-     * @return the name
-     */
     public String getName() {
-        return name;
+        String id = getId();
+        String name = nameById.get(id);
+        return (name == null) ? "_id__" + id : name;
     }
-
-    /* * -----------------if uncommenting this THEN uncomment in MsType class -------------------+/
-     * Sets the name of the type.
-     * It is possible only if the name was not set before.
-     * @return the name
-     * /
-    public void setName(String name) throws IdentifierCollision {
-        if (this.name == null) this.name = name;
-        else throw new UnsupportedOperationException("Type named " + name + " (id " + id + ") can't change name.");
-        registerName();
-    }
-    /+ + -----------------if uncommenting this THEN uncomment in MsType class ------------------- */
 
     @Override
     public int compareTo(Type that) {
@@ -304,6 +207,7 @@ System.out.println(declaredType.getId());
      */
     public abstract boolean meets(Type that);
 
+    public abstract void clarify(Type that) throws TypeError;
 
-    public abstract Type clarify(Type that);
+    public abstract Type get();
 }
